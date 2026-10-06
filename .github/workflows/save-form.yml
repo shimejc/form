@@ -1,0 +1,37 @@
+name: Save Form Data
+
+on:
+  repository_dispatch:
+    types: [form_submit]
+
+permissions:
+  contents: write
+
+jobs:
+  save:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Append data to CSV
+        run: |
+          mkdir -p data
+          FILE="data/submissions.csv"
+
+          if [ ! -f "$FILE" ]; then
+            echo "time,name,email,message" > "$FILE"
+          fi
+
+          NAME=$(echo "${{ github.event.client_payload.name }}" | tr ',' ' ')
+          EMAIL=$(echo "${{ github.event.client_payload.email }}" | tr ',' ' ')
+          MSG=$(echo "${{ github.event.client_payload.message }}" | tr ',' ' ' | tr '\n' ' ')
+          TIME="${{ github.event.client_payload.time }}"
+
+          echo "\"$TIME\",\"$NAME\",\"$EMAIL\",\"$MSG\"" >> "$FILE"
+
+      - name: Commit and push
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "नया फॉर्म सबमिशन जोड़ा गया"
+          file_pattern: data/submissions.csv
